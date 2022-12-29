@@ -10,11 +10,46 @@ from flask_apispec.views import MethodResource
 from flask_apispec import marshal_with, doc, use_kwargs
 import json
 
+
+class SignUpRequest(Schema):
+    name = fields.Str(default = "name")
+    username = fields.Str(default = "username")
+    password = fields.Str(default = "password")
+    level = fields.Str(default = 0)
+
+class APIResponse(Schema):
+    message = fields.Str(default="Success")
+
+class LoginRequest(Schema):
+    username = fields.Str(default="username")
+    password = fields.Str(default="password")
 #  Restful way of creating APIs through Flask Restful
 
 # This is a signup API. This should take, “name,username, password,level” as parameters.
 #  Here, the level is 0 for the customer, 1 for the vendor and 2 for Admin.
 class SignUpAPI(MethodResource, Resource):
+    @doc(description='Sign Up API', tags=['SignUp API'])
+    @use_kwargs(SignUpRequest, location=('json'))
+    @marshal_with(APIResponse)  # marshalling
+    def post(self, **kwargs):
+        try:
+            user = User(
+                uuid.uuid4(), 
+                kwargs['name'], 
+                kwargs['username'], 
+                kwargs['password'], 
+                kwargs['level'],
+                1,
+                datetime.datetime.utcnow())
+            db.session.add(user)
+            db.session.commit()
+            return APIResponse().dump(dict(message='User is successfully registerd')), 200
+            # return jsonify({'message':'User is successfully registerd'}), 200
+        
+        except Exception as e:
+            print(str(e))
+            return APIResponse().dump(dict(message=f'Not able to register user : {str(e)}')), 400
+            # return jsonify({'message':f'Not able to register user : {str(e)}'}), 400
     pass 
 
 api.add_resource(SignUpAPI, '/signup')
@@ -22,6 +57,25 @@ docs.register(SignUpAPI)
 
 # This API should take the username and passwordof signed-up users andsuccessfully log them in. 
 class LoginAPI(MethodResource, Resource):
+    @doc(description='Login API', tags=['Login API'])
+    @use_kwargs(LoginRequest, location=('json'))
+    @marshal_with(APIResponse)  # marshalling
+    def post(self, **kwargs):
+        try:
+            user = User.query.filter_by(username=kwargs['username'], password = kwargs['password']).first()
+            if user:
+                print('logged in')
+                session['user_id'] = user.user_id
+                print(f'User id : {str(session["user_id"])}')
+                return APIResponse().dump(dict(message='User is successfully logged in')), 200
+                # return jsonify({'message':'User is successfully logged in'}), 200
+            else:
+                return APIResponse().dump(dict(message='User not found')), 404
+                # return jsonify({'message':'User not found'}), 404
+        except Exception as e:
+            print(str(e))
+            return APIResponse().dump(dict(message=f'Not able to login user : {str(e)}')), 400
+            # return jsonify({'message':f'Not able to login user : {str(e)}'}), 400
     pass
             
 
@@ -30,7 +84,23 @@ docs.register(LoginAPI)
 
 # This API should log out the customer.
 class LogoutAPI(MethodResource, Resource):
-    pass
+    @doc(description='Logout API', tags=['Logout API'])
+    @marshal_with(APIResponse)  # marshalling
+    def post(self, **kwargs):
+        try:
+            if session['user_id']:
+                session['user_id'] = None
+                print('logged out')
+                return APIResponse().dump(dict(message='User is successfully logged out')), 200
+                # return jsonify({'message':'User is successfully logged out'}), 200
+            else:
+                print('user not found')
+                return APIResponse().dump(dict(message='User is not logged in')), 401
+                # return jsonify({'message':'User is not logged in'}), 401
+        except Exception as e:
+            print(str(e))
+            return APIResponse().dump(dict(message=f'Not able to logout user : {str(e)}')), 400
+            # return jsonify({'message':f'Not able to logout user : {str(e)}'}), 400    pass
             
 
 api.add_resource(LogoutAPI, '/logout')
