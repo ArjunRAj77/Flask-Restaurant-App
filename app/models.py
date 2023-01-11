@@ -2,14 +2,13 @@ from app import application
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 
-application.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:manager@localhost/restaurant'
+application.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:<password>@localhost/restaurant'
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(application)
 
 class User(db.Model):
         __tablename__ = 'user'
-
         user_id = db.Column(db.String(100), primary_key = True)
         name = db.Column(db.String(200), unique=True)
         username = db.Column(db.String(200), unique=True)

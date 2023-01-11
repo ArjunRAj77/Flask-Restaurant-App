@@ -24,6 +24,11 @@ class LoginRequest(Schema):
     username = fields.Str(default="username")
     password = fields.Str(default="password")
 #  Restful way of creating APIs through Flask Restful
+class AddItemRequest(Schema):
+    item_name=fields.Str(default="item_name")
+    calories_per_gm=fields.Str(default="0")
+    available_quantity=fields.Str(default="0")
+    restaurant_name=fields.Str(default="restaurant_Name")
 
 # This is a signup API. This should take, “name,username, password,level” as parameters.
 #  Here, the level is 0 for the customer, 1 for the vendor and 2 for Admin.
@@ -125,6 +130,36 @@ docs.register(GetVendorsAPI)
 # Only logged-in vendors can add items. 
 # This API should take, “item_id,item_name, restaurant_name, available_quantity, unit_price, calories_per_gm”.
 class AddItemAPI(MethodResource, Resource):
+    @doc(description="Add an item API",tags=['item API'])
+    @use_kwargs(AddItemRequest,location=('json'))
+    @marshal_with(APIResponse) # marshalling
+    def post(self,**kwargs):
+        try:
+            if session['user_id']:
+                user_id = session['user_id']
+                user_type=User.query.filter_by(user_id=user_id).first().level
+                print(user_id)
+                if(user_type ==1):
+                    item=Item(
+                        uuid.uuid4(),
+                        session['user_id'],
+                        kwargs['item_name'],
+                        kwargs['calories_per_gm'],
+                        kwargs['available_quantity'],
+                        kwargs['restaurant_name'],
+                        kwargs['unit_price']
+                    )
+                    db.session.add(item)
+                    db.session.commit()
+                    return APIResponse().dump(dict(message="Item is succesfully created")),200
+                else :
+                    return APIResponse().dump(dict(message="Logged in User is not a vendor")),405
+            else:
+                return APIResponse().dump(dict(message="Vendor is not logged in")),401
+        except Exception as e :
+            print(str(e))
+            return  APIResponse().dump(dict(message=f"Not able to list vendors:  {e}")),400
+
     pass
             
 
