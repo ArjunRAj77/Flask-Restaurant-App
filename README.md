@@ -13,6 +13,7 @@ A simple flask application for restaurant.
     `brew services start mysql` and then run the following command :
     `mysql -uroot`
 3. Create a database name `restaurant` and use it.
+4. Run the `main.py` file for starting the deployment flask application.
 
 ## POSTMAN API Call Procedure
 
