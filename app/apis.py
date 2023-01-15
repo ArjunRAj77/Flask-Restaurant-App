@@ -15,20 +15,40 @@ class SignUpRequest(Schema):
     name = fields.Str(default = "name")
     username = fields.Str(default = "username")
     password = fields.Str(default = "password")
-    level = fields.Str(default = 0)
+    level = fields.Integer(default=0)
 
 class APIResponse(Schema):
     message = fields.Str(default="Success")
 
+# class ItemSchema(Schema):
+#     item_id = fields.String()
+#     item_name = fields.String()
+#     calories_per_gm = fields.Integer()
+#     available_quantity = fields.Integer()
+#     restaurant_name = fields.String()
+#     unit_price = fields.Integer()
+class VendorSchema(Schema):
+    vendor_id = fields.String()
+    store_name = fields.String()
+    item_offerings = fields.String()
+
+
+class VendorAPIResponse(Schema):
+    message = fields.Str(default="Success")
+    vendors = fields.List(fields.Nested(VendorSchema))
+
 class LoginRequest(Schema):
     username = fields.Str(default="username")
     password = fields.Str(default="password")
+    
 #  Restful way of creating APIs through Flask Restful
 class AddItemRequest(Schema):
-    item_name=fields.Str(default="item_name")
-    calories_per_gm=fields.Str(default="0")
-    available_quantity=fields.Str(default="0")
+    item_id=fields.Str(default="1")
+    item_name=fields.Str(default="name")
+    calories_per_gm=fields.Integer(default=0)
+    available_quantity=fields.Integer(default=0)
     restaurant_name=fields.Str(default="restaurant_Name")
+    unit_price=fields.Integer(default=0)
 
 # This is a signup API. This should take, “name,username, password,level” as parameters.
 #  Here, the level is 0 for the customer, 1 for the vendor and 2 for Admin.
@@ -80,8 +100,7 @@ class LoginAPI(MethodResource, Resource):
             return APIResponse().dump(dict(message=f'Not able to login user : {str(e)}')), 400
             # return jsonify({'message':f'Not able to login user : {str(e)}'}), 400
     pass
-            
-
+         
 api.add_resource(LoginAPI, '/login')
 docs.register(LoginAPI)
 
@@ -106,7 +125,7 @@ class LogoutAPI(MethodResource, Resource):
             # return jsonify({'message':f'Not able to logout user : {str(e)}'}), 400    pass
             
 
-api.add_resource(LogoutAPI, '/logout')
+api.add_resource(LogoutAPI, '/logout')  
 docs.register(LogoutAPI)
 
 # Only added customers can be made vendors.This API should take“user_id” as a parameter.
@@ -117,8 +136,28 @@ class AddVendorAPI(MethodResource, Resource):
 api.add_resource(AddVendorAPI, '/add_vendor')
 docs.register(AddVendorAPI)
 
-# Only logged-in users can call thisAPI. This should return allthe vendor details with their store and item offerings.
+# Only logged-in users can call thisAPI. This should return all the vendor details with their store and item offerings.
 class GetVendorsAPI(MethodResource, Resource):
+    @doc(description="Get vendors API", tags=['Vendors API'])
+    @marshal_with(APIResponse)
+    def get(self):
+        try:
+            if session['user_id']:
+                vendors = Item.query.all()
+                vendor_list = []
+                for vendor in vendors:
+                    vendor_data = {
+                        'vendor_id': vendor.vendor_id,
+                        'store_name': vendor.restaurant_name,
+                        'item_offerings': Item.query.filter_by(vendor_id=vendor.vendor_id).all()
+                    }
+                    vendor_list.append(vendor_data)
+                return VendorAPIResponse().dump(dict(vendors=vendor_list)), 200
+            else:
+                return VendorAPIResponse().dump(dict(message="User is not logged in")), 401
+        except Exception as e:
+            print(str(e))
+            return VendorAPIResponse().dump(dict(message=f"Not able to list vendors: {str(e)}")), 400
     pass
             
 
@@ -139,8 +178,8 @@ class AddItemAPI(MethodResource, Resource):
                 print(user_id)
                 if(user_type ==1):
                     item=Item(
-                        uuid.uuid4(),
-                        session['user_id'],
+                        kwargs['item_id'],
+                        user_id,
                         kwargs['item_name'],
                         kwargs['calories_per_gm'],
                         kwargs['available_quantity'],

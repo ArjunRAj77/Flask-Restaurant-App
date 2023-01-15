@@ -49,3 +49,16 @@ To make a POST request to the LoginAPI endpoint using Postman, you would need to
 - Finally, click the Send button to make the POST request.
 
 image.png
+
+### 3. Logout API
+To make a POST request to the LogoutAPI endpoint using Postman, you would need to configure the following:
+
+- In the URL field, enter the full URL of your endpoint, including the host and port. For example, if your Flask app is running on http://localhost:5000 and the endpoint is /signup, the full URL would be http://localhost:5000/logout.
+
+- In the Headers section, add a key-value pair with the key Content-Type and the value application/json.
+
+- In Authorization tab, select the type of authorization you want to use, in this case, it is application secret key
+
+- Add the key in the value field of the authorization tab
+
+- Finally, click the Send button to make the POST request.
