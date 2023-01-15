@@ -1,7 +1,14 @@
-# Flask-Restaurant-App
-A simple flask application for restaurant.
+# Flask Restaurant App
+A simple flask application for restaurant that performs the following functions:
+- Sign In/ Sign Up of customers.
+- Converting customers into vendors.
+- Creating inventory items.
+- Placing Order on inventory items.
+- Displaying the complete list of items from the inventory.
 
-# Requirements
+Entirely made with python and flask.
+
+# System Requirements
 
 1. Run the following command in command shell :
     `pip install -r requirements.txt` and make sure that mySQL is installed before the first command.
