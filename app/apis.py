@@ -17,21 +17,22 @@ class SignUpRequest(Schema):
     password = fields.Str(default = "password")
     level = fields.Integer(default=0)
 
+class CreateItemOrderRequest(Schema):
+    user_id = fields.Str(default = "user_id")
+    item_id = fields.Str(default = "item_id")
+    quantity = fields.Integer(default=0)
+
 class APIResponse(Schema):
     message = fields.Str(default="Success")
 
-# class ItemSchema(Schema):
-#     item_id = fields.String()
-#     item_name = fields.String()
-#     calories_per_gm = fields.Integer()
-#     available_quantity = fields.Integer()
-#     restaurant_name = fields.String()
-#     unit_price = fields.Integer()
+
 class VendorSchema(Schema):
     vendor_id = fields.String()
     store_name = fields.String()
     item_offerings = fields.String()
 
+class PlaceOrderRequest(Schema):
+    order_id = fields.String()
 
 class VendorAPIResponse(Schema):
     message = fields.Str(default="Success")
@@ -49,8 +50,13 @@ class AddItemRequest(Schema):
     available_quantity=fields.Integer(default=0)
     restaurant_name=fields.Str(default="restaurant_Name")
     unit_price=fields.Integer(default=0)
+
 class AddVendorRequest(Schema):
     user_id=fields.Str(default="user id")
+
+class ListOrdersByCustomerRequest(Schema):
+    customer_id=fields.Str(default="customer id")  
+
 # This is a signup API. This should take, “name,username, password,level” as parameters.
 #  Here, the level is 0 for the customer, 1 for the vendor and 2 for Admin.
 class SignUpAPI(MethodResource, Resource):
@@ -157,23 +163,20 @@ class AddVendorAPI(MethodResource, Resource):
 api.add_resource(AddVendorAPI, '/add_vendor')
 docs.register(AddVendorAPI)
 
-# Only logged-in users can call thisAPI. This should return all the vendor details with their store and item offerings.
+# Only logged-in users can call this API. This should return all the vendor details with their store and item offerings.
 class GetVendorsAPI(MethodResource, Resource):
     @doc(description="Get vendors API", tags=['Vendors API'])
     @marshal_with(APIResponse)
     def get(self):
         try:
             if session['user_id']:
-                vendors = Item.query.all()
-                vendor_list = []
-                for vendor in vendors:
-                    vendor_data = {
-                        'vendor_id': vendor.vendor_id,
-                        'store_name': vendor.restaurant_name,
-                        'item_offerings': Item.query.filter_by(vendor_id=vendor.vendor_id).all()
-                    }
-                    vendor_list.append(vendor_data)
-                return VendorAPIResponse().dump(dict(vendors=vendor_list)), 200
+                vendors = []
+                for vendor in User.query.filter_by(level=1).all():
+                    items = []
+                    for item in Item.query.filter_by(vendor_id=vendor.user_id).all():
+                        items.append({"item_id": item.item_id, "item_name": item.item_name, "calories_per_gm": item.calories_per_gm, "available_quantity": item.available_quantity, "restaurant_name": item.restaurant_name, "unit_price": item.unit_price})
+                    vendors.append({"vendor_id": vendor.user_id, "name": vendor.name, "items": items})
+                return jsonify(vendors)
             else:
                 return VendorAPIResponse().dump(dict(message="User is not logged in")), 401
         except Exception as e:
@@ -220,12 +223,30 @@ class AddItemAPI(MethodResource, Resource):
 
     pass
             
-
 api.add_resource(AddItemAPI, '/add_item')
 docs.register(AddItemAPI)
 
 
 class ListItemsAPI(MethodResource, Resource):
+    @doc(description="Item List API",tags=['item_list API'])
+    @marshal_with(APIResponse) 
+    def get(self):
+        try:
+            items = Item.query.all()
+            items_list = []
+            for item in items:
+                items_list.append({
+                    "item_id": item.item_id,
+                    "vendor_id": item.vendor_id,
+                    "item_name": item.item_name,
+                    "calories_per_gm": item.calories_per_gm,
+                    "available_quantity": item.available_quantity,
+                    "restaurant_name": item.restaurant_name,
+                    "unit_price": item.unit_price
+                })
+            return jsonify(items_list)
+        except Exception as e:
+            return {'message': 'Error: ' + str(e)}, 500
     pass
 
 api.add_resource(ListItemsAPI, '/list_items')
@@ -233,32 +254,108 @@ docs.register(ListItemsAPI)
 
 
 class CreateItemOrderAPI(MethodResource, Resource):
-    pass
-            
+    @doc(description="Create Item Order API",tags=['create_item_order API'])
+    @use_kwargs(CreateItemOrderRequest,location=('json'))
+    @marshal_with(APIResponse) 
+    def post(self,**kwargs):
+        try:
+            user_id = kwargs['user_id']
+            item_id = kwargs['item_id']
+            quantity = kwargs['quantity']
+            user = User.query.filter_by(user_id=user_id).first()
+            item = Item.query.filter_by(item_id=item_id).first()
+            if not user:
+                return APIResponse().dump(dict(message="Invalid user_id")),400
+            if not item:
+                return APIResponse().dump(dict(message="Invalid item_id")),400
+
+            if quantity > item.available_quantity:
+                return APIResponse().dump(dict(message="Requested quantity is not available")),400
+            order_id = str(uuid.uuid1())
+            order = Order(order_id, user_id)
+            db.session.add(order)
+            db.session.commit()
+            order_item = OrderItems(order_id, item_id, quantity, item.unit_price)
+            db.session.add(order_item)
+            item.available_quantity -= quantity
+            db.session.commit()
+            return APIResponse().dump(dict(message="Order placed successfully")),200
+        except Exception as e:
+            return {'message': str(e)}, 500
+                
 
 api.add_resource(CreateItemOrderAPI, '/create_items_order')
 docs.register(CreateItemOrderAPI)
 
 # Only logged-in customers can place orders.This API should take“order_id” as a parameter.
 class PlaceOrderAPI(MethodResource, Resource):
-    pass
-            
+    @doc(description="Place an Order API",tags=['order API'])
+    @use_kwargs(PlaceOrderRequest,location=('json'))
+    @marshal_with(APIResponse) 
+    def post(self,**kwargs):
+        order_id=kwargs['order_id']
+        # Get user information from a session or token
+        user = User.query.filter_by(user_id=session['user_id']).first()
+        if not user:
+            return APIResponse().dump(dict(message="You must be logged in to place an order.")),401
 
+        # Check if order with given id already exists
+        order = Order.query.filter_by(order_id=order_id).first()
+        if order:
+            return APIResponse().dump(dict(message="Order with this id already exists.")),409
+        # Create new order
+        new_order = Order(order_id, user.user_id)
+        db.session.add(new_order)
+        db.session.commit()
+        return APIResponse().dump(dict(message="Order placed successfully.")),201
+
+            
 api.add_resource(PlaceOrderAPI, '/place_order')
 docs.register(PlaceOrderAPI)
 
-# Only logged-in users cancall this API. Thisreturns all the orders placed by that customer.
-#  This should take “customer_id” asa parameter.
+# Only logged-in users can call this API. This returns all the orders placed by that customer.
+# This should take “customer_id” as a parameter.
 class ListOrdersByCustomerAPI(MethodResource, Resource):
-    pass
-            
+    @doc(description="List Order API by Customer",tags=['list_order_by_customer API'])
+    @use_kwargs(ListOrdersByCustomerRequest,location=('json'))
+    @marshal_with(APIResponse) 
+    def get(self, **kwargs):
+        customer_id=kwargs['customer_id']
+            # Check if user is logged in
+        user = User.query.filter_by(user_id=session['user_id']).first()
+        if not user:
+            return APIResponse().dump(dict(message="You must be logged in to view your orders.")),401
 
+        # Get all orders placed by the customer
+        orders = Order.query.filter_by(user_id=customer_id).all()
+        if not orders:
+            return APIResponse().dump(dict(message="No orders found for this customer.")),404 
+        order_list = []
+        for order in orders:
+            order_list.append({"order_id": order.order_id, "total_amount": order.total_amount, "created_ts": order.created_ts})
+
+        return {"orders": order_list}, 200
+      
 api.add_resource(ListOrdersByCustomerAPI, '/list_orders')
 docs.register(ListOrdersByCustomerAPI)
 
 # Only the admin can call this API.This API returns all the ordersin the orders table.
 class ListAllOrdersAPI(MethodResource, Resource):
-    pass
+    @doc(description="List all Order API",tags=['list_all_orders API'])
+    @marshal_with(APIResponse)
+    def get(self):
+        # Check if user is admin
+        user = User.query.filter_by(user_id=session['user_id']).first()
+        if not user or user.level != 1:
+            return APIResponse().dump(dict(message="You must be an admin to view all orders.")),401 
+        # Get all orders
+        orders = Order.query.all()
+        if not orders:
+            return APIResponse().dump(dict(message="No orders found.")),404
+        order_list = []
+        for order in orders:
+            order_list.append({"order_id": order.order_id, "user_id": order.user_id, "total_amount": order.total_amount, "created_ts": order.created_ts})
+        return {"orders": order_list}, 200
             
 api.add_resource(ListAllOrdersAPI, '/list_all_orders')
 docs.register(ListAllOrdersAPI)

@@ -53,7 +53,6 @@ class Item(db.Model):
 
 class Order(db.Model):
         __tablename__ = 'orders'
-        
         order_id = db.Column(db.String(100), primary_key = True)
         user_id = db.Column(db.String(100), db.ForeignKey("user.user_id"))
         total_amount = db.Column(db.Integer, default=0)
