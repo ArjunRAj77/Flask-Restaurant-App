@@ -25,18 +25,11 @@ class CreateItemOrderRequest(Schema):
 class APIResponse(Schema):
     message = fields.Str(default="Success")
 
-
-class VendorSchema(Schema):
-    vendor_id = fields.String()
-    store_name = fields.String()
-    item_offerings = fields.String()
-
 class PlaceOrderRequest(Schema):
     order_id = fields.String()
 
 class VendorAPIResponse(Schema):
     message = fields.Str(default="Success")
-    vendors = fields.List(fields.Nested(VendorSchema))
 
 class LoginRequest(Schema):
     username = fields.Str(default="username")
