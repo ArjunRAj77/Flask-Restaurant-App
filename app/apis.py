@@ -49,7 +49,8 @@ class AddItemRequest(Schema):
     available_quantity=fields.Integer(default=0)
     restaurant_name=fields.Str(default="restaurant_Name")
     unit_price=fields.Integer(default=0)
-
+class AddVendorRequest(Schema):
+    user_id=fields.Str(default="user id")
 # This is a signup API. This should take, “name,username, password,level” as parameters.
 #  Here, the level is 0 for the customer, 1 for the vendor and 2 for Admin.
 class SignUpAPI(MethodResource, Resource):
@@ -130,6 +131,26 @@ docs.register(LogoutAPI)
 
 # Only added customers can be made vendors.This API should take“user_id” as a parameter.
 class AddVendorAPI(MethodResource, Resource):
+    @doc(description="Add a vendor",tags=['add_vendor API'])
+    @use_kwargs(AddVendorRequest,location=('json'))
+    @marshal_with(APIResponse) # marshalling
+    def post(self,**kwargs):
+        try:
+            if session['user_id']:
+                user_id = kwargs['user_id']
+                user_type=User.query.filter_by(user_id=user_id).first().level
+                print(user_id)
+                if(user_type ==0):
+                    User.level = 1
+                    db.session.commit()
+                    return APIResponse().dump(dict(message="Customer is upgraded to vendor")),200
+                else :
+                    return APIResponse().dump(dict(message="Customer is already a vendor")),405
+            else:
+                return APIResponse().dump(dict(message="Customer is not logged in")),401
+        except Exception as e :
+            print(str(e))
+            return  APIResponse().dump(dict(message=f"Not able to upgrade to vendor:  {e}")),400
     pass
             
 
