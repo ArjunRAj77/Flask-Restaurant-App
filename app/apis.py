@@ -43,9 +43,7 @@ class SignUpAPI(MethodResource, Resource):
                 kwargs['name'], 
                 kwargs['username'], 
                 kwargs['password'], 
-                kwargs['level'],
-                1,
-                datetime.datetime.utcnow())
+                kwargs['level'])
             db.session.add(user)
             db.session.commit()
             return APIResponse().dump(dict(message='User is successfully registerd')), 200
@@ -53,7 +51,7 @@ class SignUpAPI(MethodResource, Resource):
         
         except Exception as e:
             print(str(e))
-            return APIResponse().dump(dict(message=f'Not able to register user : {str(e)}')), 400
+            return APIResponse().dump(dict(message=f'Not able to register user : {str(e)}')), 404
             # return jsonify({'message':f'Not able to register user : {str(e)}'}), 400
     pass 
 

@@ -2,7 +2,7 @@ from app import application
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 
-application.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:<password>@localhost/restaurant'
+application.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Arjun123@localhost/restaurant'
 application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(application)
@@ -29,7 +29,6 @@ class User(db.Model):
 
 class Item(db.Model):
         __tablename__ = 'item'
-    
         item_id = db.Column(db.String(100), primary_key = True)
         vendor_id = db.Column(db.String(100), db.ForeignKey("user.user_id"))
         item_name = db.Column(db.String(500))
@@ -53,7 +52,7 @@ class Item(db.Model):
             self.created_ts = datetime.utcnow()
 
 class Order(db.Model):
-        __tablename__ = 'order'
+        __tablename__ = 'orders'
         
         order_id = db.Column(db.String(100), primary_key = True)
         user_id = db.Column(db.String(100), db.ForeignKey("user.user_id"))
