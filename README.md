@@ -62,3 +62,51 @@ To make a POST request to the LogoutAPI endpoint using Postman, you would need t
 - Add the key in the value field of the authorization tab
 
 - Finally, click the Send button to make the POST request.
+
+### 4. Add Vendor API
+- This API should take “user_id” as a parameter.
+
+### 5. Get Vendors API
+- Only logged-in users can call this API. 
+- This should return all the vendor details with their store and item offerings.
+
+### 6. Add Item API
+- This API should be of the following structure
+```
+{   
+    "item_id":"",
+    "item_name":"",
+    "calories_per_gm":0,
+    "available_quantity":0,
+    "restaurant_name":"",
+    "unit_price":0
+}
+```
+
+### 7. List Items API
+- It list all the items in the inventory
+
+### 8. Create Item Order API
+- API for creating an item order 
+- input parameters:
+```
+{   
+    "user_id":"",
+    "item_id":"",
+    "quantity":0
+
+}
+```
+
+### 9. Place Order API
+- Only logged-in customers can place orders.
+- This API should take “order_id” as a parameter.
+
+### 10. List Orders By CustomerAPI
+- Only logged-in users can call this API. 
+- This returns all the orders placed by that customer.
+- This should take “customer_id” as a parameter.
+
+### 11. List All Orders API
+- Only the admin can call this API.
+- This API returns all the orders in the orders table.

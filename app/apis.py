@@ -10,7 +10,7 @@ from flask_apispec.views import MethodResource
 from flask_apispec import marshal_with, doc, use_kwargs
 import json
 
-
+# Creating Schemas for various API calls
 class SignUpRequest(Schema):
     name = fields.Str(default = "name")
     username = fields.Str(default = "username")
@@ -35,7 +35,6 @@ class LoginRequest(Schema):
     username = fields.Str(default="username")
     password = fields.Str(default="password")
     
-#  Restful way of creating APIs through Flask Restful
 class AddItemRequest(Schema):
     item_id=fields.Str(default="1")
     item_name=fields.Str(default="name")
@@ -49,6 +48,8 @@ class AddVendorRequest(Schema):
 
 class ListOrdersByCustomerRequest(Schema):
     customer_id=fields.Str(default="customer id")  
+
+# Creating API call classes and Functions
 
 # This is a signup API. This should take, “name,username, password,level” as parameters.
 #  Here, the level is 0 for the customer, 1 for the vendor and 2 for Admin.
@@ -66,19 +67,16 @@ class SignUpAPI(MethodResource, Resource):
                 kwargs['level'])
             db.session.add(user)
             db.session.commit()
-            return APIResponse().dump(dict(message='User is successfully registerd')), 200
-            # return jsonify({'message':'User is successfully registerd'}), 200
-        
+            return APIResponse().dump(dict(message='User is successfully registerd')), 200     
         except Exception as e:
             print(str(e))
             return APIResponse().dump(dict(message=f'Not able to register user : {str(e)}')), 404
-            # return jsonify({'message':f'Not able to register user : {str(e)}'}), 400
     pass 
 
 api.add_resource(SignUpAPI, '/signup')
 docs.register(SignUpAPI)
 
-# This API should take the username and passwordof signed-up users andsuccessfully log them in. 
+# This API should take the username and password of signed-up users and successfully log them in. 
 class LoginAPI(MethodResource, Resource):
     @doc(description='Login API', tags=['Login API'])
     @use_kwargs(LoginRequest, location=('json'))
@@ -114,16 +112,13 @@ class LogoutAPI(MethodResource, Resource):
                 session['user_id'] = None
                 print('logged out')
                 return APIResponse().dump(dict(message='User is successfully logged out')), 200
-                # return jsonify({'message':'User is successfully logged out'}), 200
             else:
                 print('user not found')
                 return APIResponse().dump(dict(message='User is not logged in')), 401
-                # return jsonify({'message':'User is not logged in'}), 401
         except Exception as e:
             print(str(e))
             return APIResponse().dump(dict(message=f'Not able to logout user : {str(e)}')), 400
-            # return jsonify({'message':f'Not able to logout user : {str(e)}'}), 400    pass
-            
+
 
 api.add_resource(LogoutAPI, '/logout')  
 docs.register(LogoutAPI)
@@ -150,8 +145,7 @@ class AddVendorAPI(MethodResource, Resource):
         except Exception as e :
             print(str(e))
             return  APIResponse().dump(dict(message=f"Not able to upgrade to vendor:  {e}")),400
-    pass
-            
+    pass        
 
 api.add_resource(AddVendorAPI, '/add_vendor')
 docs.register(AddVendorAPI)
@@ -176,7 +170,7 @@ class GetVendorsAPI(MethodResource, Resource):
             print(str(e))
             return VendorAPIResponse().dump(dict(message=f"Not able to list vendors: {str(e)}")), 400
     pass
-            
+    
 
 api.add_resource(GetVendorsAPI, '/list_vendors')
 docs.register(GetVendorsAPI)
